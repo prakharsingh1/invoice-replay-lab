@@ -1,0 +1,376 @@
+{
+  "schemaVersion": 1,
+  "version": "incident-softmax-synthetic-v1",
+  "algorithm": "multiclass-softmax-regression",
+  "featureNames": [
+    "duplicateRate",
+    "unverifiedRate",
+    "outOfOrderRate",
+    "missingPaymentRate",
+    "snapshotMismatchRate",
+    "amountConflictRate",
+    "dependencyGapRate",
+    "logDeliveryCount",
+    "hasDuplicate",
+    "hasUnverified",
+    "hasOutOfOrder",
+    "hasMissingPayment",
+    "hasSnapshotMismatch",
+    "hasAmountConflict",
+    "hasDependencyGap"
+  ],
+  "classes": [
+    {
+      "key": "healthy",
+      "label": "No dominant incident signal"
+    },
+    {
+      "key": "duplicate_delivery",
+      "label": "Duplicate webhook delivery"
+    },
+    {
+      "key": "untrusted_delivery",
+      "label": "Unverified webhook delivery"
+    },
+    {
+      "key": "delivery_reordering",
+      "label": "Webhook delivery reordering"
+    },
+    {
+      "key": "missing_delivery",
+      "label": "Missing delivery or state gap"
+    },
+    {
+      "key": "amount_conflict",
+      "label": "Payment amount conflict"
+    }
+  ],
+  "preprocessing": {
+    "mean": [
+      0.1035295430710417,
+      0.07220601658701181,
+      0.06728086569158717,
+      0.032782240367044614,
+      0.026836982874106418,
+      0.06935478217207591,
+      0.016464515917356468,
+      0.8474660664867333,
+      0.3121527777777778,
+      0.21145833333333333,
+      0.2065972222222222,
+      0.12777777777777777,
+      0.08680555555555555,
+      0.21006944444444445,
+      0.043055555555555555
+    ],
+    "scale": [
+      0.2167721256725276,
+      0.19740544343894406,
+      0.18917358213607502,
+      0.13624639341759057,
+      0.11765569839748093,
+      0.1909385030405318,
+      0.09633850842453459,
+      0.15768745204779286,
+      0.46337179575735427,
+      0.4083426338226446,
+      0.40486394009876225,
+      0.3338422041682979,
+      0.2815499086844974,
+      0.40735767202207834,
+      0.20298220289315372
+    ]
+  },
+  "weights": [
+    [
+      -0.42500519016225186,
+      -0.3458832428345511,
+      -0.3396617099820283,
+      -0.2570693609436074,
+      -0.21770480078294716,
+      -0.27777559535701923,
+      -0.166933973101429,
+      -0.018334481155373637,
+      -1.3621354671162078,
+      -1.1606979860857893,
+      -1.1520483452894754,
+      -0.8534085438486838,
+      -0.636351926957727,
+      -0.9783040388630917,
+      -0.49405397300542775
+    ],
+    [
+      1.5007201385021445,
+      -0.2935994869932744,
+      -0.30077560119192587,
+      -0.21302120953954734,
+      -0.14337394550724358,
+      -0.7359332626282339,
+      -0.13265832215833304,
+      0.05126994828162894,
+      2.0841746096662157,
+      -0.3208565749227305,
+      -0.27366452952565906,
+      -0.18478527411631482,
+      -0.2268894271902578,
+      -0.5680426179497235,
+      -0.2588997920922251
+    ],
+    [
+      -0.2700078230761413,
+      1.3622177070112702,
+      -0.23089997011673646,
+      -0.15873893050060933,
+      -0.12161056081416137,
+      -0.17032086941502647,
+      -0.07578869710703218,
+      -0.053791657822041754,
+      -0.3667192217366273,
+      1.9789224745959588,
+      -0.2144077782081516,
+      -0.10563191192462837,
+      -0.21543753535457408,
+      -0.13630063317346214,
+      -0.15181914434087426
+    ],
+    [
+      -0.30072318306761325,
+      -0.2626301210289687,
+      1.284515210088017,
+      -0.1541840857204432,
+      -0.0930326083810023,
+      -0.12328598570498149,
+      -0.0760354448982624,
+      -0.023889033420357756,
+      -0.37004255215146975,
+      -0.1515396530034555,
+      2.0158456382398486,
+      -0.12260654806268229,
+      -0.17565233357150384,
+      -0.16048011685600488,
+      -0.12976516136441643
+    ],
+    [
+      -0.3047669128951587,
+      -0.23641359305965473,
+      -0.23551152889766988,
+      0.954929096168929,
+      0.6728869635451799,
+      -0.19988022380433493,
+      0.5300748341099989,
+      0.08353259085461384,
+      -0.39714104103210407,
+      -0.20975029741165277,
+      -0.2211886529386158,
+      1.3377855190814274,
+      1.4509539712174142,
+      -0.1501474779417634,
+      1.1650501107760043
+    ],
+    [
+      -0.2002170293009735,
+      -0.22369126309482565,
+      -0.17766639989965763,
+      -0.17191550946472312,
+      -0.09716504805982767,
+      1.5071959369095982,
+      -0.07865839684494112,
+      -0.03878736673846943,
+      0.41186367237019833,
+      -0.1360779631723302,
+      -0.15453633227794722,
+      -0.07135324112911492,
+      -0.1966227481433513,
+      1.993274884784046,
+      -0.13051203997306077
+    ]
+  ],
+  "bias": [
+    0.08144306141612828,
+    0.14703901431210398,
+    -0.14705108170701284,
+    -0.15586066694461245,
+    0.10723193357618227,
+    -0.03280226065279157
+  ],
+  "training": {
+    "datasetKind": "generated-synthetic-feature-vectors",
+    "trainingSeed": 20261008,
+    "holdoutSeed": 20261013,
+    "examples": 2880,
+    "examplesPerClass": 480,
+    "holdoutExamples": 960,
+    "holdoutExamplesPerClass": 160,
+    "epochs": 850,
+    "optimizer": "full-batch cross-entropy gradient descent",
+    "initialLearningRate": 0.22,
+    "learningRateSchedule": "0.22 / (1 + epoch / 600)",
+    "l2Regularization": 0.0006,
+    "initialParameters": "all-zero weights and biases",
+    "lossHistory": [
+      {
+        "epoch": 1,
+        "crossEntropy": 1.7917594692280547
+      },
+      {
+        "epoch": 100,
+        "crossEntropy": 0.11997111409100099
+      },
+      {
+        "epoch": 200,
+        "crossEntropy": 0.07525602667300343
+      },
+      {
+        "epoch": 300,
+        "crossEntropy": 0.05904947287606526
+      },
+      {
+        "epoch": 400,
+        "crossEntropy": 0.0504976773884194
+      },
+      {
+        "epoch": 500,
+        "crossEntropy": 0.04514724451476208
+      },
+      {
+        "epoch": 600,
+        "crossEntropy": 0.04145285531587731
+      },
+      {
+        "epoch": 700,
+        "crossEntropy": 0.038731903293534556
+      },
+      {
+        "epoch": 800,
+        "crossEntropy": 0.03663447654272234
+      },
+      {
+        "epoch": 850,
+        "crossEntropy": 0.035753982532998795
+      }
+    ],
+    "trainingSha256": "0545171155256f688f88f9726335473676e89b283569d4601d81c15dd4a2e575",
+    "holdoutSha256": "1ec2a98a4958e9abd333e72b7f066ef83f5485ac38770986f019ad6cc486cc6a",
+    "exactFeatureVectorOverlap": 0,
+    "rejectedDuplicateVectors": {
+      "training": 178,
+      "holdout": 204
+    },
+    "generator": "Independent seeded metric generation, dominant incident signals with optional weak secondary signals. Amount-conflict examples sometimes also carry duplicate counts to represent conflicting reuse of an identity. Exact vectors excluded across both sets."
+  },
+  "evaluation": {
+    "examples": 960,
+    "accuracy": 0.9947916666666666,
+    "crossEntropy": 0.03751122032609223,
+    "confusionMatrixConvention": "Rows are generated true classes; columns are predicted classes in model.classes order.",
+    "confusionMatrix": [
+      [
+        160,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        156,
+        0,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        0,
+        160,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        160,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        159,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        160
+      ]
+    ],
+    "perClass": [
+      {
+        "key": "healthy",
+        "precision": 1,
+        "recall": 1,
+        "support": 160,
+        "predicted": 160
+      },
+      {
+        "key": "duplicate_delivery",
+        "precision": 1,
+        "recall": 0.975,
+        "support": 160,
+        "predicted": 156
+      },
+      {
+        "key": "untrusted_delivery",
+        "precision": 0.9937888198757764,
+        "recall": 1,
+        "support": 160,
+        "predicted": 161
+      },
+      {
+        "key": "delivery_reordering",
+        "precision": 1,
+        "recall": 1,
+        "support": 160,
+        "predicted": 160
+      },
+      {
+        "key": "missing_delivery",
+        "precision": 1,
+        "recall": 0.99375,
+        "support": 160,
+        "predicted": 159
+      },
+      {
+        "key": "amount_conflict",
+        "precision": 0.975609756097561,
+        "recall": 1,
+        "support": 160,
+        "predicted": 164
+      }
+    ]
+  },
+  "modelCard": {
+    "intendedUse": "Assist a human in ranking synthetic invoice replay incident signals alongside deterministic evidence.",
+    "data": "All training and holdout examples are algorithmically generated synthetic metric vectors. They contain no customer information and are not captured PayPal API or webhook traffic.",
+    "architecture": "Fifteen standardized numeric replay features: seven rates, log delivery volume, and seven signal-presence indicators; six-class linear softmax classifier trained by cross-entropy gradient descent.",
+    "validation": "Independent seed holdout, zero exact feature-vector overlap. Preliminary evaluations informed presence features and correlated duplicate/amount-conflict examples. The final holdout uses a new seed. Both sets use the same synthetic generator family, so this measures only synthetic pattern recognition.",
+    "calibration": "No probability calibration study was performed. The confidence field is a relative softmax model score.",
+    "advisoryGuard": "Critical replay findings outside the learned taxonomy, or any critical finding paired with a healthy model rank, trigger a deterministic unclassified-critical advisory. The raw six-class scores remain inspectable; the guarded advisory has no model confidence.",
+    "externalAIServiceCalls": 0,
+    "limitations": [
+      "Trained and evaluated only on synthetic incidents; accuracy on real PayPal sandbox or production incidents has not been established.",
+      "Softmax scores are relative model scores, not calibrated probabilities of correctness.",
+      "Classifier inference cannot prove causality or verify payment authenticity.",
+      "The model summarizes aggregate metrics and can miss event sequence details; inspect the cited replay evidence."
+    ]
+  }
+}

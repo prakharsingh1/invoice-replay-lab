@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.DS_Store
+artifacts/sandbox-evidence.json
+artifacts/paypal-sandbox-probe.json
+artifacts/*.log
+artifacts/*.zip
+.playwright-cli/
+output/playwright/cli.config.json
+.private-library-helpers-*/
+video/*.aiff
+video/*.wav
+video/raw-*
+# Internal task handoff and capture/upload working files are not public source.
+docs/
+output/playwright/*
+!output/playwright/desktop-demo.png
+!output/playwright/mobile-demo.png
+!output/playwright/browser-export.json
+video/*
+!video/InvoiceReplayLab_Offline_Synthetic_Preview.mp4

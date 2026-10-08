@@ -1,0 +1,264 @@
+{
+  "scenario": {
+    "id": "duplicate-storm",
+    "title": "The invoice paid three times",
+    "description": "A retry storm repeats one payment under both duplicate event and new event identities.",
+    "synthetic": true,
+    "provenance": "authored-synthetic",
+    "invoice": {
+      "id": "SYN-INV-DUPLICATE-STORM",
+      "currency": "USD",
+      "total": "240.00"
+    }
+  },
+  "naive": {
+    "status": "PAID",
+    "paidCents": 72000,
+    "refundedCents": 0
+  },
+  "protected": {
+    "status": "PAID",
+    "paidCents": 24000,
+    "refundedCents": 0,
+    "balanceCents": 0,
+    "netCents": 24000,
+    "totalCents": 24000,
+    "currency": "USD"
+  },
+  "snapshot": {
+    "status": "PAID",
+    "paidCents": 24000,
+    "refundedCents": 0,
+    "evidenceId": "snapshot",
+    "source": "synthetic",
+    "asOf": "2026-10-08T10:30:00.000Z"
+  },
+  "timeline": [
+    {
+      "deliveryId": "D1",
+      "eventId": "WH-01",
+      "type": "INVOICING.INVOICE.SENT",
+      "createdAt": "2026-10-08T10:00:00.000Z",
+      "receivedAt": "2026-10-08T10:10:00.000Z",
+      "verdict": "applied",
+      "reason": "Observed sent event; ledger-derived status takes priority",
+      "evidenceId": "D1",
+      "amountCents": 0,
+      "sequence": 1,
+      "injected": false
+    },
+    {
+      "deliveryId": "D2",
+      "eventId": "WH-02",
+      "type": "INVOICING.INVOICE.PAID",
+      "createdAt": "2026-10-08T10:02:00.000Z",
+      "receivedAt": "2026-10-08T10:11:00.000Z",
+      "verdict": "applied",
+      "reason": "Unique trusted transaction collected",
+      "evidenceId": "D2",
+      "amountCents": 24000,
+      "sequence": 2,
+      "injected": false
+    },
+    {
+      "deliveryId": "D3",
+      "eventId": "WH-02",
+      "type": "INVOICING.INVOICE.PAID",
+      "createdAt": "2026-10-08T10:02:00.000Z",
+      "receivedAt": "2026-10-08T10:12:00.000Z",
+      "verdict": "duplicate",
+      "reason": "Event ID already processed",
+      "evidenceId": "D3",
+      "amountCents": 24000,
+      "sequence": 3,
+      "injected": false
+    },
+    {
+      "deliveryId": "D4",
+      "eventId": "WH-03",
+      "type": "INVOICING.INVOICE.PAID",
+      "createdAt": "2026-10-08T10:02:00.000Z",
+      "receivedAt": "2026-10-08T10:13:00.000Z",
+      "verdict": "duplicate",
+      "reason": "Transaction ID already posted",
+      "evidenceId": "D4",
+      "amountCents": 24000,
+      "sequence": 4,
+      "injected": false
+    }
+  ],
+  "findings": [
+    {
+      "id": "duplicate_delivery",
+      "severity": "warning",
+      "title": "Duplicate delivery ignored",
+      "detail": "Repeated event or transaction identities would inflate a worker that adds every delivery.",
+      "evidenceIds": [
+        "D3",
+        "D2",
+        "D4"
+      ],
+      "action": "Persist event and transaction identities atomically before side effects."
+    }
+  ],
+  "metrics": {
+    "deliveries": 4,
+    "uniqueEvents": 3,
+    "duplicates": 2,
+    "unverified": 0,
+    "outOfOrder": 0,
+    "missingPayments": 0,
+    "snapshotMismatch": 0,
+    "amountConflicts": 0,
+    "dependencyGaps": 0
+  },
+  "consistency": {
+    "matches": true,
+    "differences": []
+  },
+  "transformations": {
+    "dropped": [],
+    "duplicated": [],
+    "reversed": false
+  },
+  "inputEvidence": {
+    "invoice": {
+      "id": "SYN-INV-DUPLICATE-STORM",
+      "currency": "USD",
+      "total": "240.00"
+    },
+    "snapshot": {
+      "status": "PAID",
+      "paid": "240.00",
+      "refunded": "0.00",
+      "asOf": "2026-10-08T10:30:00.000Z",
+      "source": "synthetic"
+    },
+    "deliveries": [
+      {
+        "deliveryId": "D1",
+        "receivedAt": "2026-10-08T10:10:00.000Z",
+        "verified": true,
+        "verificationSource": "fixture-assumption",
+        "event": {
+          "id": "WH-01",
+          "type": "INVOICING.INVOICE.SENT",
+          "createdAt": "2026-10-08T10:00:00.000Z",
+          "invoiceId": "SYN-INV-DUPLICATE-STORM"
+        }
+      },
+      {
+        "deliveryId": "D2",
+        "receivedAt": "2026-10-08T10:11:00.000Z",
+        "verified": true,
+        "verificationSource": "fixture-assumption",
+        "event": {
+          "id": "WH-02",
+          "type": "INVOICING.INVOICE.PAID",
+          "createdAt": "2026-10-08T10:02:00.000Z",
+          "invoiceId": "SYN-INV-DUPLICATE-STORM",
+          "transaction": {
+            "id": "SYN-PAY-1",
+            "kind": "payment",
+            "amount": "240.00",
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "deliveryId": "D3",
+        "receivedAt": "2026-10-08T10:12:00.000Z",
+        "verified": true,
+        "verificationSource": "fixture-assumption",
+        "event": {
+          "id": "WH-02",
+          "type": "INVOICING.INVOICE.PAID",
+          "createdAt": "2026-10-08T10:02:00.000Z",
+          "invoiceId": "SYN-INV-DUPLICATE-STORM",
+          "transaction": {
+            "id": "SYN-PAY-1",
+            "kind": "payment",
+            "amount": "240.00",
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "deliveryId": "D4",
+        "receivedAt": "2026-10-08T10:13:00.000Z",
+        "verified": true,
+        "verificationSource": "fixture-assumption",
+        "event": {
+          "id": "WH-03",
+          "type": "INVOICING.INVOICE.PAID",
+          "createdAt": "2026-10-08T10:02:00.000Z",
+          "invoiceId": "SYN-INV-DUPLICATE-STORM",
+          "transaction": {
+            "id": "SYN-PAY-1",
+            "kind": "payment",
+            "amount": "240.00",
+            "currency": "USD"
+          }
+        }
+      }
+    ]
+  },
+  "evidenceHashScope": "SHA-256 of the entire deterministic replay report before evidenceHash and AI output are added; includes normalized input deliveries and transformations.",
+  "limitations": [
+    "Deliveries are normalized authored simulations, not actual PayPal webhook payloads or verified signatures. Snapshot provenance is labeled separately.",
+    "Replay is in-memory; durable ingestion, concurrency, and the full invoice lifecycle are outside this prototype.",
+    "Snapshot comparison can detect disagreement; it cannot prove which system is wrong."
+  ],
+  "evidenceHash": "7b2f90e347935fde3c2adedb3817840f15f4e99962445898e4c768837947a106",
+  "ai": {
+    "label": "Duplicate webhook delivery",
+    "key": "duplicate_delivery",
+    "confidence": 0.9984603763750634,
+    "scores": [
+      {
+        "key": "duplicate_delivery",
+        "label": "Duplicate webhook delivery",
+        "probability": 0.9984603763750634
+      },
+      {
+        "key": "healthy",
+        "label": "No dominant incident signal",
+        "probability": 0.0009053974728662027
+      },
+      {
+        "key": "amount_conflict",
+        "label": "Payment amount conflict",
+        "probability": 0.0003726292316578514
+      },
+      {
+        "key": "untrusted_delivery",
+        "label": "Unverified webhook delivery",
+        "probability": 0.00010868306463007843
+      },
+      {
+        "key": "delivery_reordering",
+        "label": "Webhook delivery reordering",
+        "probability": 0.00009000716536162437
+      },
+      {
+        "key": "missing_delivery",
+        "label": "Missing delivery or state gap",
+        "probability": 0.00006290669042101819
+      }
+    ],
+    "modelVersion": "incident-softmax-synthetic-v1",
+    "source": "trained-local-ml",
+    "explanation": "The trained local classifier ranks “Duplicate webhook delivery” first. Supporting deterministic replay findings: Duplicate delivery ignored. This is classifier inference from synthetic training, not proof of causality.",
+    "evidenceIds": [
+      "D3",
+      "D2",
+      "D4"
+    ],
+    "limitations": [
+      "Trained and evaluated only on synthetic incidents; accuracy on real PayPal sandbox or production incidents has not been established.",
+      "Softmax scores are relative model scores, not calibrated probabilities of correctness.",
+      "Classifier inference cannot prove causality or verify payment authenticity.",
+      "The model summarizes aggregate metrics and can miss event sequence details; inspect the cited replay evidence."
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "invoice-replay-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sandbox invoice incident replay with evidence-grounded local machine learning",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "train": "node scripts/train-model.mjs",
+    "validate": "node scripts/validate.mjs",
+    "sandbox:probe": "node --env-file-if-exists=.env scripts/sandbox-probe.mjs"
+  }
+}

@@ -1,0 +1,391 @@
+{
+  "generatedAt": "2026-10-08T07:55:34.395Z",
+  "scope": "local synthetic validation; no actual PayPal API calls",
+  "sandbox": {
+    "configured": false,
+    "executed": false,
+    "missing": [
+      "PAYPAL_CLIENT_ID",
+      "PAYPAL_CLIENT_SECRET"
+    ]
+  },
+  "ai": {
+    "version": "incident-softmax-synthetic-v1",
+    "algorithm": "multiclass-softmax-regression",
+    "source": "trained-local-ml",
+    "featureNames": [
+      "duplicateRate",
+      "unverifiedRate",
+      "outOfOrderRate",
+      "missingPaymentRate",
+      "snapshotMismatchRate",
+      "amountConflictRate",
+      "dependencyGapRate",
+      "logDeliveryCount",
+      "hasDuplicate",
+      "hasUnverified",
+      "hasOutOfOrder",
+      "hasMissingPayment",
+      "hasSnapshotMismatch",
+      "hasAmountConflict",
+      "hasDependencyGap"
+    ],
+    "classes": [
+      {
+        "key": "healthy",
+        "label": "No dominant incident signal"
+      },
+      {
+        "key": "duplicate_delivery",
+        "label": "Duplicate webhook delivery"
+      },
+      {
+        "key": "untrusted_delivery",
+        "label": "Unverified webhook delivery"
+      },
+      {
+        "key": "delivery_reordering",
+        "label": "Webhook delivery reordering"
+      },
+      {
+        "key": "missing_delivery",
+        "label": "Missing delivery or state gap"
+      },
+      {
+        "key": "amount_conflict",
+        "label": "Payment amount conflict"
+      }
+    ],
+    "training": {
+      "datasetKind": "generated-synthetic-feature-vectors",
+      "trainingSeed": 20261008,
+      "holdoutSeed": 20261013,
+      "examples": 2880,
+      "examplesPerClass": 480,
+      "holdoutExamples": 960,
+      "holdoutExamplesPerClass": 160,
+      "epochs": 850,
+      "optimizer": "full-batch cross-entropy gradient descent",
+      "initialLearningRate": 0.22,
+      "learningRateSchedule": "0.22 / (1 + epoch / 600)",
+      "l2Regularization": 0.0006,
+      "initialParameters": "all-zero weights and biases",
+      "lossHistory": [
+        {
+          "epoch": 1,
+          "crossEntropy": 1.7917594692280547
+        },
+        {
+          "epoch": 100,
+          "crossEntropy": 0.11997111409100099
+        },
+        {
+          "epoch": 200,
+          "crossEntropy": 0.07525602667300343
+        },
+        {
+          "epoch": 300,
+          "crossEntropy": 0.05904947287606526
+        },
+        {
+          "epoch": 400,
+          "crossEntropy": 0.0504976773884194
+        },
+        {
+          "epoch": 500,
+          "crossEntropy": 0.04514724451476208
+        },
+        {
+          "epoch": 600,
+          "crossEntropy": 0.04145285531587731
+        },
+        {
+          "epoch": 700,
+          "crossEntropy": 0.038731903293534556
+        },
+        {
+          "epoch": 800,
+          "crossEntropy": 0.03663447654272234
+        },
+        {
+          "epoch": 850,
+          "crossEntropy": 0.035753982532998795
+        }
+      ],
+      "trainingSha256": "0545171155256f688f88f9726335473676e89b283569d4601d81c15dd4a2e575",
+      "holdoutSha256": "1ec2a98a4958e9abd333e72b7f066ef83f5485ac38770986f019ad6cc486cc6a",
+      "exactFeatureVectorOverlap": 0,
+      "rejectedDuplicateVectors": {
+        "training": 178,
+        "holdout": 204
+      },
+      "generator": "Independent seeded metric generation, dominant incident signals with optional weak secondary signals. Amount-conflict examples sometimes also carry duplicate counts to represent conflicting reuse of an identity. Exact vectors excluded across both sets."
+    },
+    "evaluation": {
+      "examples": 960,
+      "accuracy": 0.9947916666666666,
+      "crossEntropy": 0.03751122032609223,
+      "confusionMatrixConvention": "Rows are generated true classes; columns are predicted classes in model.classes order.",
+      "confusionMatrix": [
+        [
+          160,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          156,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          160,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          160,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          159,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          160
+        ]
+      ],
+      "perClass": [
+        {
+          "key": "healthy",
+          "precision": 1,
+          "recall": 1,
+          "support": 160,
+          "predicted": 160
+        },
+        {
+          "key": "duplicate_delivery",
+          "precision": 1,
+          "recall": 0.975,
+          "support": 160,
+          "predicted": 156
+        },
+        {
+          "key": "untrusted_delivery",
+          "precision": 0.9937888198757764,
+          "recall": 1,
+          "support": 160,
+          "predicted": 161
+        },
+        {
+          "key": "delivery_reordering",
+          "precision": 1,
+          "recall": 1,
+          "support": 160,
+          "predicted": 160
+        },
+        {
+          "key": "missing_delivery",
+          "precision": 1,
+          "recall": 0.99375,
+          "support": 160,
+          "predicted": 159
+        },
+        {
+          "key": "amount_conflict",
+          "precision": 0.975609756097561,
+          "recall": 1,
+          "support": 160,
+          "predicted": 164
+        }
+      ]
+    },
+    "modelCard": {
+      "intendedUse": "Assist a human in ranking synthetic invoice replay incident signals alongside deterministic evidence.",
+      "data": "All training and holdout examples are algorithmically generated synthetic metric vectors. They contain no customer information and are not captured PayPal API or webhook traffic.",
+      "architecture": "Fifteen standardized numeric replay features: seven rates, log delivery volume, and seven signal-presence indicators; six-class linear softmax classifier trained by cross-entropy gradient descent.",
+      "validation": "Independent seed holdout, zero exact feature-vector overlap. Preliminary evaluations informed presence features and correlated duplicate/amount-conflict examples. The final holdout uses a new seed. Both sets use the same synthetic generator family, so this measures only synthetic pattern recognition.",
+      "calibration": "No probability calibration study was performed. The confidence field is a relative softmax model score.",
+      "advisoryGuard": "Critical replay findings outside the learned taxonomy, or any critical finding paired with a healthy model rank, trigger a deterministic unclassified-critical advisory. The raw six-class scores remain inspectable; the guarded advisory has no model confidence.",
+      "externalAIServiceCalls": 0,
+      "limitations": [
+        "Trained and evaluated only on synthetic incidents; accuracy on real PayPal sandbox or production incidents has not been established.",
+        "Softmax scores are relative model scores, not calibrated probabilities of correctness.",
+        "Classifier inference cannot prove causality or verify payment authenticity.",
+        "The model summarizes aggregate metrics and can miss event sequence details; inspect the cited replay evidence."
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "duplicate-storm",
+      "consistency": {
+        "matches": true,
+        "differences": []
+      },
+      "metrics": {
+        "deliveries": 4,
+        "uniqueEvents": 3,
+        "duplicates": 2,
+        "unverified": 0,
+        "outOfOrder": 0,
+        "missingPayments": 0,
+        "snapshotMismatch": 0,
+        "amountConflicts": 0,
+        "dependencyGaps": 0
+      },
+      "ai": {
+        "key": "duplicate_delivery",
+        "confidence": 0.9984603763750634
+      },
+      "evidenceHash": "7b2f90e347935fde3c2adedb3817840f15f4e99962445898e4c768837947a106"
+    },
+    {
+      "id": "reordered-refund",
+      "consistency": {
+        "matches": true,
+        "differences": []
+      },
+      "metrics": {
+        "deliveries": 3,
+        "uniqueEvents": 3,
+        "duplicates": 0,
+        "unverified": 0,
+        "outOfOrder": 2,
+        "missingPayments": 0,
+        "snapshotMismatch": 0,
+        "amountConflicts": 0,
+        "dependencyGaps": 1
+      },
+      "ai": {
+        "key": "delivery_reordering",
+        "confidence": 0.9380542823842418
+      },
+      "evidenceHash": "1e07a67aadc2ff04832490bbd5173c77db1d2761a109facb4e92dd44c4963e6e"
+    },
+    {
+      "id": "untrusted-payment",
+      "consistency": {
+        "matches": true,
+        "differences": []
+      },
+      "metrics": {
+        "deliveries": 2,
+        "uniqueEvents": 1,
+        "duplicates": 0,
+        "unverified": 1,
+        "outOfOrder": 0,
+        "missingPayments": 0,
+        "snapshotMismatch": 0,
+        "amountConflicts": 0,
+        "dependencyGaps": 0
+      },
+      "ai": {
+        "key": "untrusted_delivery",
+        "confidence": 0.999168632763548
+      },
+      "evidenceHash": "030666383beb341b7193bc04cf9f8df5004cd4d891139ed250199a93e7c38255"
+    },
+    {
+      "id": "missing-payment",
+      "consistency": {
+        "matches": false,
+        "differences": [
+          "status: ledger SENT, snapshot PAID",
+          "paidCents: ledger 0, snapshot 56000"
+        ]
+      },
+      "metrics": {
+        "deliveries": 1,
+        "uniqueEvents": 1,
+        "duplicates": 0,
+        "unverified": 0,
+        "outOfOrder": 0,
+        "missingPayments": 1,
+        "snapshotMismatch": 1,
+        "amountConflicts": 0,
+        "dependencyGaps": 0
+      },
+      "ai": {
+        "key": "missing_delivery",
+        "confidence": 0.9999999999256746
+      },
+      "evidenceHash": "8f294fee84c42ef4832913faf5aa4146d8a87554ac68a0aed62c0a204314cc9f"
+    },
+    {
+      "id": "amount-conflict",
+      "consistency": {
+        "matches": false,
+        "differences": [
+          "status: ledger SENT, snapshot PAID",
+          "paidCents: ledger 0, snapshot 25000"
+        ]
+      },
+      "metrics": {
+        "deliveries": 3,
+        "uniqueEvents": 3,
+        "duplicates": 1,
+        "unverified": 0,
+        "outOfOrder": 0,
+        "missingPayments": 1,
+        "snapshotMismatch": 1,
+        "amountConflicts": 1,
+        "dependencyGaps": 0
+      },
+      "ai": {
+        "key": "missing_delivery",
+        "confidence": 0.9935189673601762
+      },
+      "evidenceHash": "d09b67118841c68cf3027be11f3acd33edd463db19a82dea665ea8d140456990"
+    },
+    {
+      "id": "healthy-partial",
+      "consistency": {
+        "matches": true,
+        "differences": []
+      },
+      "metrics": {
+        "deliveries": 4,
+        "uniqueEvents": 4,
+        "duplicates": 0,
+        "unverified": 0,
+        "outOfOrder": 0,
+        "missingPayments": 0,
+        "snapshotMismatch": 0,
+        "amountConflicts": 0,
+        "dependencyGaps": 0
+      },
+      "ai": {
+        "key": "healthy",
+        "confidence": 0.9632948620284499
+      },
+      "evidenceHash": "b312c3db09894f2a0affcaec8ae962cdc0b966a8505342b3d2db95954948c11a"
+    }
+  ],
+  "blockers": [
+    "Successful actual PayPal sandbox probe pending existing credentials.",
+    "Final public source and demo availability must be checked before submission.",
+    "Actual <3 minute public YouTube demo pending."
+  ]
+}

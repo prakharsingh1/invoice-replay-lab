@@ -1,0 +1,409 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "duplicate-storm",
+      "title": "The invoice paid three times",
+      "description": "A retry storm repeats one payment under both duplicate event and new event identities.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "notice": "Fictional amounts, identities, and normalized events. No real customer data, PayPal transactions, or signature verification.",
+      "invoice": {
+        "id": "SYN-INV-DUPLICATE-STORM",
+        "currency": "USD",
+        "total": "240.00"
+      },
+      "snapshot": {
+        "status": "PAID",
+        "paid": "240.00",
+        "refunded": "0.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-01",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-DUPLICATE-STORM"
+          }
+        },
+        {
+          "deliveryId": "D2",
+          "receivedAt": "2026-10-08T10:11:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-02",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-DUPLICATE-STORM",
+            "transaction": {
+              "id": "SYN-PAY-1",
+              "kind": "payment",
+              "amount": "240.00",
+              "currency": "USD"
+            }
+          }
+        },
+        {
+          "deliveryId": "D3",
+          "receivedAt": "2026-10-08T10:12:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-02",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-DUPLICATE-STORM",
+            "transaction": {
+              "id": "SYN-PAY-1",
+              "kind": "payment",
+              "amount": "240.00",
+              "currency": "USD"
+            }
+          }
+        },
+        {
+          "deliveryId": "D4",
+          "receivedAt": "2026-10-08T10:13:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-03",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-DUPLICATE-STORM",
+            "transaction": {
+              "id": "SYN-PAY-1",
+              "kind": "payment",
+              "amount": "240.00",
+              "currency": "USD"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "reordered-refund",
+      "title": "The refund that beat its payment",
+      "description": "A refund arrives first; a stale sent event arrives last and regresses a naive worker.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "notice": "Fictional amounts, identities, and normalized events. No real customer data, PayPal transactions, or signature verification.",
+      "invoice": {
+        "id": "SYN-INV-REORDERED-REFUND",
+        "currency": "USD",
+        "total": "120.00"
+      },
+      "snapshot": {
+        "status": "PARTIALLY_REFUNDED",
+        "paid": "120.00",
+        "refunded": "30.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-13",
+            "type": "INVOICING.INVOICE.REFUNDED",
+            "createdAt": "2026-10-08T10:04:00.000Z",
+            "invoiceId": "SYN-INV-REORDERED-REFUND",
+            "transaction": {
+              "id": "SYN-REF-1",
+              "kind": "refund",
+              "amount": "30.00",
+              "currency": "USD",
+              "refersTo": "SYN-PAY-2"
+            }
+          }
+        },
+        {
+          "deliveryId": "D2",
+          "receivedAt": "2026-10-08T10:11:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-12",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-REORDERED-REFUND",
+            "transaction": {
+              "id": "SYN-PAY-2",
+              "kind": "payment",
+              "amount": "120.00",
+              "currency": "USD"
+            }
+          }
+        },
+        {
+          "deliveryId": "D3",
+          "receivedAt": "2026-10-08T10:12:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-11",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-REORDERED-REFUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "untrusted-payment",
+      "title": "The payment that never happened",
+      "description": "A fictional payment delivery fails the fixture trust assumption; it must not affect money state.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "notice": "Fictional amounts, identities, and normalized events. No real customer data, PayPal transactions, or signature verification.",
+      "invoice": {
+        "id": "SYN-INV-UNTRUSTED-PAYMENT",
+        "currency": "USD",
+        "total": "399.00"
+      },
+      "snapshot": {
+        "status": "SENT",
+        "paid": "0.00",
+        "refunded": "0.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-21",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-UNTRUSTED-PAYMENT"
+          }
+        },
+        {
+          "deliveryId": "D2",
+          "receivedAt": "2026-10-08T10:11:00.000Z",
+          "verified": false,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-22",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-UNTRUSTED-PAYMENT",
+            "transaction": {
+              "id": "SYN-PAY-3",
+              "kind": "payment",
+              "amount": "399.00",
+              "currency": "USD"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "missing-payment",
+      "title": "Paid upstream, missing locally",
+      "description": "The snapshot says paid, but the observed delivery stream has no payment event.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "notice": "Fictional amounts, identities, and normalized events. No real customer data, PayPal transactions, or signature verification.",
+      "invoice": {
+        "id": "SYN-INV-MISSING-PAYMENT",
+        "currency": "USD",
+        "total": "560.00"
+      },
+      "snapshot": {
+        "status": "PAID",
+        "paid": "560.00",
+        "refunded": "0.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-31",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-MISSING-PAYMENT"
+          }
+        }
+      ]
+    },
+    {
+      "id": "amount-conflict",
+      "title": "One identity, two amounts",
+      "description": "Two events claim the same payment transaction with conflicting amounts.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "notice": "Fictional amounts, identities, and normalized events. No real customer data, PayPal transactions, or signature verification.",
+      "invoice": {
+        "id": "SYN-INV-AMOUNT-CONFLICT",
+        "currency": "USD",
+        "total": "250.00"
+      },
+      "snapshot": {
+        "status": "PAID",
+        "paid": "250.00",
+        "refunded": "0.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-41",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-AMOUNT-CONFLICT"
+          }
+        },
+        {
+          "deliveryId": "D2",
+          "receivedAt": "2026-10-08T10:11:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-42",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-AMOUNT-CONFLICT",
+            "transaction": {
+              "id": "SYN-PAY-4",
+              "kind": "payment",
+              "amount": "250.00",
+              "currency": "USD"
+            }
+          }
+        },
+        {
+          "deliveryId": "D3",
+          "receivedAt": "2026-10-08T10:12:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-43",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:03:00.000Z",
+            "invoiceId": "SYN-INV-AMOUNT-CONFLICT",
+            "transaction": {
+              "id": "SYN-PAY-4",
+              "kind": "payment",
+              "amount": "999.00",
+              "currency": "USD"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "healthy-partial",
+      "title": "Two payments, one partial refund",
+      "description": "A clean ledger with two distinct partial payments and a referenced refund.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "notice": "Fictional amounts, identities, and normalized events. No real customer data, PayPal transactions, or signature verification.",
+      "invoice": {
+        "id": "SYN-INV-HEALTHY-PARTIAL",
+        "currency": "USD",
+        "total": "300.00"
+      },
+      "snapshot": {
+        "status": "PARTIALLY_REFUNDED",
+        "paid": "300.00",
+        "refunded": "50.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-51",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-HEALTHY-PARTIAL"
+          }
+        },
+        {
+          "deliveryId": "D2",
+          "receivedAt": "2026-10-08T10:11:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-52",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:02:00.000Z",
+            "invoiceId": "SYN-INV-HEALTHY-PARTIAL",
+            "transaction": {
+              "id": "SYN-PAY-5",
+              "kind": "payment",
+              "amount": "100.00",
+              "currency": "USD"
+            }
+          }
+        },
+        {
+          "deliveryId": "D3",
+          "receivedAt": "2026-10-08T10:12:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-53",
+            "type": "INVOICING.INVOICE.PAID",
+            "createdAt": "2026-10-08T10:04:00.000Z",
+            "invoiceId": "SYN-INV-HEALTHY-PARTIAL",
+            "transaction": {
+              "id": "SYN-PAY-6",
+              "kind": "payment",
+              "amount": "200.00",
+              "currency": "USD"
+            }
+          }
+        },
+        {
+          "deliveryId": "D4",
+          "receivedAt": "2026-10-08T10:13:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-54",
+            "type": "INVOICING.INVOICE.REFUNDED",
+            "createdAt": "2026-10-08T10:06:00.000Z",
+            "invoiceId": "SYN-INV-HEALTHY-PARTIAL",
+            "transaction": {
+              "id": "SYN-REF-2",
+              "kind": "refund",
+              "amount": "50.00",
+              "currency": "USD",
+              "refersTo": "SYN-PAY-6"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+{
+  "application": "InvoiceReplayLab",
+  "author": "Prakhar Singh",
+  "exportedAt": "2026-10-08T07:48:40.097Z",
+  "dataDisclosure": "Synthetic scenario replay. This export is not evidence of a PayPal sandbox API call.",
+  "experiment": {
+    "scenarioId": "reordered-refund",
+    "dropDeliveryIds": [
+      "D2"
+    ],
+    "duplicateDeliveryIds": [],
+    "reverse": false
+  },
+  "evidenceHashScope": "Deterministic replay report before evidenceHash and AI output were appended. Export metadata and classifier output are outside this hash.",
+  "replay": {
+    "scenario": {
+      "id": "reordered-refund",
+      "title": "The refund that beat its payment",
+      "description": "A refund arrives first; a stale sent event arrives last and regresses a naive worker.",
+      "synthetic": true,
+      "provenance": "authored-synthetic",
+      "invoice": {
+        "id": "SYN-INV-REORDERED-REFUND",
+        "currency": "USD",
+        "total": "120.00"
+      }
+    },
+    "naive": {
+      "status": "SENT",
+      "paidCents": 0,
+      "refundedCents": 3000
+    },
+    "protected": {
+      "status": "SENT",
+      "paidCents": 0,
+      "refundedCents": 0,
+      "balanceCents": 12000,
+      "netCents": 0,
+      "totalCents": 12000,
+      "currency": "USD"
+    },
+    "snapshot": {
+      "status": "PARTIALLY_REFUNDED",
+      "paidCents": 12000,
+      "refundedCents": 3000,
+      "evidenceId": "snapshot",
+      "source": "synthetic",
+      "asOf": "2026-10-08T10:30:00.000Z"
+    },
+    "timeline": [
+      {
+        "deliveryId": "D1",
+        "eventId": "WH-13",
+        "type": "INVOICING.INVOICE.REFUNDED",
+        "createdAt": "2026-10-08T10:04:00.000Z",
+        "receivedAt": "2026-10-08T10:10:00.000Z",
+        "verdict": "quarantined",
+        "reason": "Referenced payment absent after replay",
+        "evidenceId": "D1",
+        "amountCents": 3000,
+        "sequence": 1,
+        "injected": false
+      },
+      {
+        "deliveryId": "D3",
+        "eventId": "WH-11",
+        "type": "INVOICING.INVOICE.SENT",
+        "createdAt": "2026-10-08T10:00:00.000Z",
+        "receivedAt": "2026-10-08T10:12:00.000Z",
+        "verdict": "applied",
+        "reason": "Observed sent event; ledger-derived status takes priority",
+        "evidenceId": "D3",
+        "amountCents": 0,
+        "sequence": 2,
+        "injected": false
+      }
+    ],
+    "findings": [
+      {
+        "id": "dependency_gap",
+        "severity": "warning",
+        "title": "Refund dependency arrived late",
+        "detail": "A refund arrived before the payment it references. The protected reducer defers it rather than losing it.",
+        "evidenceIds": [
+          "D1"
+        ],
+        "action": "Resolve refund references after collecting trusted payments; quarantine unresolved dependencies."
+      },
+      {
+        "id": "delivery_reordering",
+        "severity": "warning",
+        "title": "Delivery order differs from event order",
+        "detail": "A later arrival carries an older event timestamp. A last-event-wins worker can regress invoice state.",
+        "evidenceIds": [
+          "D3"
+        ],
+        "action": "Derive state from the transaction ledger; avoid assigning status directly from delivery order."
+      },
+      {
+        "id": "amount_conflict",
+        "severity": "critical",
+        "title": "Refund cannot be posted",
+        "detail": "Referenced payment absent after replay",
+        "evidenceIds": [
+          "D1"
+        ],
+        "action": "Fetch the missing payment or inspect the entire refund group; no inferred money is posted."
+      },
+      {
+        "id": "missing_delivery",
+        "severity": "critical",
+        "title": "Snapshot contains money absent from deliveries",
+        "detail": "Trusted observed payments total 0.00, while the synthetic snapshot reports 120.00 USD. The missing amount is not fabricated.",
+        "evidenceIds": [
+          "snapshot",
+          "D3"
+        ],
+        "action": "Re-fetch the sandbox invoice and inspect webhook delivery history before changing the ledger."
+      }
+    ],
+    "metrics": {
+      "deliveries": 2,
+      "uniqueEvents": 2,
+      "duplicates": 0,
+      "unverified": 0,
+      "outOfOrder": 1,
+      "missingPayments": 1,
+      "snapshotMismatch": 1,
+      "amountConflicts": 1,
+      "dependencyGaps": 1
+    },
+    "consistency": {
+      "matches": false,
+      "differences": [
+        "status: ledger SENT, snapshot PARTIALLY_REFUNDED",
+        "paidCents: ledger 0, snapshot 12000",
+        "refundedCents: ledger 0, snapshot 3000"
+      ]
+    },
+    "transformations": {
+      "dropped": [
+        "D2"
+      ],
+      "duplicated": [],
+      "reversed": false
+    },
+    "inputEvidence": {
+      "invoice": {
+        "id": "SYN-INV-REORDERED-REFUND",
+        "currency": "USD",
+        "total": "120.00"
+      },
+      "snapshot": {
+        "status": "PARTIALLY_REFUNDED",
+        "paid": "120.00",
+        "refunded": "30.00",
+        "asOf": "2026-10-08T10:30:00.000Z",
+        "source": "synthetic"
+      },
+      "deliveries": [
+        {
+          "deliveryId": "D1",
+          "receivedAt": "2026-10-08T10:10:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-13",
+            "type": "INVOICING.INVOICE.REFUNDED",
+            "createdAt": "2026-10-08T10:04:00.000Z",
+            "invoiceId": "SYN-INV-REORDERED-REFUND",
+            "transaction": {
+              "id": "SYN-REF-1",
+              "kind": "refund",
+              "amount": "30.00",
+              "currency": "USD",
+              "refersTo": "SYN-PAY-2"
+            }
+          }
+        },
+        {
+          "deliveryId": "D3",
+          "receivedAt": "2026-10-08T10:12:00.000Z",
+          "verified": true,
+          "verificationSource": "fixture-assumption",
+          "event": {
+            "id": "WH-11",
+            "type": "INVOICING.INVOICE.SENT",
+            "createdAt": "2026-10-08T10:00:00.000Z",
+            "invoiceId": "SYN-INV-REORDERED-REFUND"
+          }
+        }
+      ]
+    },
+    "evidenceHashScope": "SHA-256 of the entire deterministic replay report before evidenceHash and AI output are added; includes normalized input deliveries and transformations.",
+    "limitations": [
+      "Normalized authored fixtures, not actual PayPal webhook payloads or verified signatures.",
+      "Replay is in-memory; durable ingestion, concurrency, and the full invoice lifecycle are outside this prototype.",
+      "Snapshot comparison can detect disagreement; it cannot prove which system is wrong."
+    ],
+    "evidenceHash": "07f39ee34f702b47ac8d39f5688c360e44514ec336c14ea4b96e1c1e62a28161",
+    "ai": {
+      "label": "Missing delivery or state gap",
+      "key": "missing_delivery",
+      "confidence": 0.9999999195806013,
+      "scores": [
+        {
+          "key": "missing_delivery",
+          "label": "Missing delivery or state gap",
+          "probability": 0.9999999195806013
+        },
+        {
+          "key": "delivery_reordering",
+          "label": "Webhook delivery reordering",
+          "probability": 4.3839236154389346e-8
+        },
+        {
+          "key": "amount_conflict",
+          "label": "Payment amount conflict",
+          "probability": 3.6577677433632096e-8
+        },
+        {
+          "key": "untrusted_delivery",
+          "label": "Unverified webhook delivery",
+          "probability": 2.457202370215712e-12
+        },
+        {
+          "key": "duplicate_delivery",
+          "label": "Duplicate webhook delivery",
+          "probability": 2.566883568509952e-14
+        },
+        {
+          "key": "healthy",
+          "label": "No dominant incident signal",
+          "probability": 2.2273649432144254e-15
+        }
+      ],
+      "modelVersion": "incident-softmax-synthetic-v1",
+      "source": "trained-local-ml",
+      "explanation": "The trained local classifier ranks “Missing delivery or state gap” first. Supporting deterministic replay findings: Refund dependency arrived late; Refund cannot be posted; Snapshot contains money absent from deliveries. This is classifier inference from synthetic training, not proof of causality.",
+      "evidenceIds": [
+        "D1",
+        "snapshot",
+        "D3"
+      ],
+      "limitations": [
+        "Trained and evaluated only on synthetic incidents; accuracy on real PayPal sandbox or production incidents has not been established.",
+        "Softmax scores are relative model scores, not calibrated probabilities of correctness.",
+        "Classifier inference cannot prove causality or verify payment authenticity.",
+        "The model summarizes aggregate metrics and can miss event sequence details; inspect the cited replay evidence.",
+        "Multiple incident signals are active. A single top class cannot describe every cause."
+      ]
+    }
+  }
+}
