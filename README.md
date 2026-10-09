@@ -2,7 +2,7 @@
 
 **Evidence before action.** A local workbench for reproducing invoice event-handling bugs, comparing a naive listener with a protected journal, and inspecting every finding's source evidence.
 
-Built for Prakhar Singh's PayPal AI Hackathon project. This is a runnable local prototype. All replay histories are authored synthetic fixtures, not captured PayPal traffic. The sandbox adapter is implemented, but successful actual PayPal execution is still pending existing credentials. This source is MIT-licensed. Actual sandbox execution and final hackathon submission remain pending.
+Built for Prakhar Singh's PayPal AI Hackathon project. This runnable local prototype combines six authored synthetic histories, a fitted local classifier, and a recorded PayPal sandbox draft observation. One authorized native sandbox probe successfully created and read a USD 1.00 DRAFT on 9 October 2026. The draft anchors a separate, explicitly imagined untrusted-payment experiment; it is not a real payment or webhook history. The server and default CLI inspect recorded evidence without PayPal requests. All 70 current tests and isolated browser checks passed. This source is MIT-licensed. The integrated 148.84-second local demo is ready for upload. Public video availability and final entrant review remain pending; no hackathon submission is claimed.
 
 ## Run locally
 
@@ -24,11 +24,11 @@ npm run train
 npm run validate
 ```
 
-`train` regenerates `artifacts/model.json`. `validate` writes `artifacts/validation.json` and `artifacts/example-evidence.json`. These commands run locally and do not call PayPal or an external AI service. The measured model result and completed test/browser validation are recorded below.
+`train` regenerates `artifacts/model.json`. `validate` writes `artifacts/validation.json` and `artifacts/example-evidence.json`, and validates the bundled recorded draft offline. These commands do not call PayPal or an external AI service. The measured model result, separate validation runs, and actual sandbox observation are recorded below.
 
 ## A five-minute judge walkthrough
 
-1. Keep the **Synthetic incident lab** disclosure visible. Without credentials, the connection badge should read **SANDBOX NOT CONNECTED**.
+1. Keep the provenance disclosure visible. The bundled public observation works without credentials; the badge should read **RECORDED SANDBOX DRAFT**. It represents recorded sandbox evidence, not a fresh API request.
 2. Select **The invoice paid three times** (`duplicate-storm`), then click **Replay incident**. Inspect the naive listener's USD 720 payment total versus the protected journal's USD 240 payment total. The repeated event and repeated transaction cannot double-post money in the protected journal.
 3. Select a timeline delivery or finding's evidence button. Inspect the actual event identity, delivery identity, timestamps, journal verdict, and reason.
 4. Select **The refund that beat its payment** (`reordered-refund`). The protected journal resolves the USD 30 refund against its USD 120 payment; a stale sent event cannot regress the derived state. Select payment delivery `D2`, click **Drop selected**, and replay: the refund should remain unapplied and the discrepancy should be visible. Click **Reset changes** and replay to restore the baseline.
@@ -36,7 +36,7 @@ npm run validate
 6. Select **One identity, two amounts** (`amount-conflict`): both claims for the ambiguous transaction are excluded, so the protected paid total is USD 0 and differs from the USD 250 snapshot. Inspect the critical conflicting-amount evidence. The model may rank a missing-state signal from this mixed case; the amount-conflict evidence remains visible.
 7. Expand **Model provenance & limitations**. Model output ranks an incident category; deterministic evidence determines the journal. Confidence is a relative softmax score, not a calibrated probability of correctness.
 8. Click **Export evidence JSON**. The export labels its synthetic provenance and includes timeline decisions, findings, model output, and a deterministic replay evidence hash.
-9. If approved existing credentials are available, use the separate sandbox probe below. A configured badge alone does not establish successful API execution.
+9. Select **My sandbox draft: imagined payment**. Its reference is the recorded DRAFT, while its payment delivery is simulated and untrusted. The naive listener records USD 1.00; the protected journal remains DRAFT with paid USD 0.00 and quarantines the imagined delivery. This path passed fresh isolated browser checks without additional API requests.
 
 ## Synthetic cases
 
@@ -70,11 +70,28 @@ The model artifact includes the confusion matrix, per-class precision/recall, tr
 
 Model recommendations cite matching deterministic findings and preserve additional critical evidence even when its signal differs from the top class. A deterministic guard replaces the advisory with **Unclassified critical evidence** when a critical finding falls outside the learned taxonomy, or contradicts a healthy model rank. It preserves the raw six-class scores and has no model confidence; it is not a learned seventh class. No LLM generates ledger facts, and no external AI call is needed or claimed.
 
-## Actual PayPal sandbox probe
+## Actual PayPal sandbox observation and probe
 
-This optional path calls the fixed sandbox origin `https://api-m.sandbox.paypal.com`. It creates a **USD 1.00 DRAFT** invoice containing fictional `example.test` recipient data, then reads it back and checks its identity, amount, currency, and draft status. It exposes no send, payment, capture, or refund method. Each CLI run can create a new sandbox draft.
+A native probe completed at **2026-10-09T16:11:36.361Z**:
 
-Use an **existing, authorized sandbox application**. Copy the blank example and edit the local file:
+| Recorded operation | Result |
+| --- | --- |
+| `POST /v1/oauth2/token` | HTTP 200 |
+| `POST /v2/invoicing/invoices` | HTTP 201; returned `INV2-N7L3-U92J-8WXX-HQLX` |
+| `GET /v2/invoicing/invoices/INV2-N7L3-U92J-8WXX-HQLX` | HTTP 200; same identity, DRAFT, USD 1.00 |
+| Evidence provenance | `source: paypal-sandbox`, `executed: true`; native transport |
+
+This establishes draft creation and readback. No send, pay, capture, or refund operation occurred. Inspect the [public recorded sandbox evidence](artifacts/paypal-sandbox-evidence.public.json). The fuller sanitized local result is stored in ignored `artifacts/paypal-sandbox-probe.json`; credentials and raw provider bodies are not published.
+
+The server is strictly read-only with respect to PayPal. The default CLI also inspects recorded evidence and sends **zero requests**:
+
+```sh
+npm run sandbox:probe
+```
+
+External creation is a separately authorized CLI action requiring the explicit `--create-new-draft` flag. It uses only `https://api-m.sandbox.paypal.com`, creates a **USD 1.00 DRAFT** with fictional `example.test` recipient data, and reads it back. An existing private result or attempt marker prevents repeated creation in the same checkout. No send, payment, capture, or refund method is exposed.
+
+To reproduce the probe under your own authorization, use an **existing, authorized sandbox application**. If a local `.env` does not already exist, copy the blank example and edit the local file; preserve any existing private configuration:
 
 ```sh
 cp .env.example .env
@@ -95,15 +112,15 @@ PAYPAL_SANDBOX_ACCESS_TOKEN=existing_single_line_sandbox_token
 
 The client ID and secret path exchanges credentials at `/v1/oauth2/token`; the existing-token path skips that exchange. Credentials remain server-side. Do not publish `.env`, tokens, screenshots of secret fields, or raw provider responses. The adapter uses the token response's actual expiry, timeouts, constrained rate-limit retries, fixed allowed operations, and redacted diagnostics.
 
-After editing `.env`, restart the server and click **Run sandbox probe**, or run:
+An independently approved, eligible new creation run uses:
 
 ```sh
-npm run sandbox:probe
+npm run sandbox:probe -- --create-new-draft
 ```
 
-The CLI saves sanitized successful evidence to `artifacts/paypal-sandbox-probe.json`. With missing credentials it exits with code 2 and writes no successful evidence. A request failure exits with code 1; draft creation may have succeeded before a later lookup failed, so inspect the sandbox dashboard before retrying. After a successful native probe, the UI adds My sandbox draft: imagined payment. Its reference is the observed PayPal DRAFT snapshot; its untrusted payment delivery is explicitly simulated. The protected journal must remain DRAFT with no posted payment. Contract-test probes cannot unlock this case; true execution remains required.
+The creation path saves sanitized successful evidence to `artifacts/paypal-sandbox-probe.json`. Its prior-result/attempt guard prevents silently creating another draft; do not remove that guard to replay the demonstration. The read-only server and default CLI reuse valid recorded evidence. **My sandbox draft: imagined payment** uses its observed DRAFT snapshot and an explicitly simulated untrusted payment delivery. The protected journal must remain DRAFT with no posted payment. Contract-test responses cannot substitute for the native observation.
 
-Existing credentials have not been supplied to this build task; **no actual sandbox result is currently claimed**. Adapter contract tests use injected, explicitly mocked responses. The optional signature-postback helper is not exercised by the scenario library, and the prototype exposes no public webhook ingress.
+Existing credentials were configured privately by the owner for the successful bounded probe. Adapter contract tests still use injected, explicitly mocked responses and remain separate from its native execution evidence. The optional signature-postback helper was not invoked by that probe. The prototype exposes no public webhook ingress and has observed no paid or refunded invoice history.
 
 Official references: [PayPal AI developer resources](https://developer.paypal.com/ai-tools/get-started), [PayPal AI Toolkit](https://github.com/paypal/AI-Toolkit). The Toolkit was consulted as a reference; it is not a runtime dependency or a claimed integration.
 
@@ -127,12 +144,12 @@ curl -X POST http://127.0.0.1:4178/api/replay \
 
 ## Validation and limits
 
-`npm test` passed **46 tests**: 20 reducer, six ML, 14 stubbed PayPal contract, and six server checks. Fresh Chromium verified all six displayed cases, a dropped-payment experiment, evidence download, and mobile layout. PayPal contract tests use stubs; they do not demonstrate actual sandbox calls. See the [validation report](artifacts/TEST_REPORT.md).
+The final aggregate `npm test` run passed **70/70 tests**, with **zero failures, skips, or cancellations**, in 1759.769209 ms on 9 October 2026. Fresh isolated browser checks passed all seven scenarios, including the recorded-draft badge and USD 1.00 naive versus USD 0.00 protected DRAFT behavior, without additional API requests. The native probe remains separate from stubbed contract tests. See the [validation report](artifacts/TEST_REPORT.md).
 
 The prototype uses in-memory replay. Durable webhook ingestion, database transactions, worker concurrency, a complete invoice lifecycle, production operations, and real merchant outcome studies are outside its implemented scope. The evidence hash covers deterministic replay content before classifier output is attached; it is not a signature, a trusted timestamp, or a guarantee of source authenticity.
 
-## Offline demonstration and project status
+## Demonstrations and project status
 
-[Watch the 2m12s offline synthetic preview](video/InvoiceReplayLab_Offline_Synthetic_Preview.mp4). This records the actual local browser prototype and prominently labels **SYNTHETIC / OFFLINE PREVIEW | SANDBOX NOT EXECUTED**. Its narration uses the local computer voice. It demonstrates replay behavior and fitted local AI inference; it does not demonstrate a PayPal API execution.
+The historical local artifact `video/InvoiceReplayLab_Offline_Synthetic_Preview.mp4` is a 131.92-second offline preview, recorded before any PayPal API execution. Its offline banner and computer-voice narration remain accurate for that footage. The file is not included in the public text-only repository. The current integrated local demo is `video/InvoiceReplayLab_Integrated_Demo.mp4`: 148.84 seconds, H.264/AAC, with actual browser footage, original local computer-voice narration, and a persistent recorded-sandbox / synthetic-replay disclosure. It decoded successfully end to end, and representative frames were reviewed for chapter alignment. No further PayPal request occurred. Video files are distributed separately from this source repository; the public YouTube URL is pending.
 
-The source repository is [prakharsingh1/invoice-replay-lab](https://github.com/prakharsingh1/invoice-replay-lab), licensed under [MIT](LICENSE), copyright 2026 Prakhar Singh. No actual PayPal sandbox execution or hackathon submission is claimed. A compliant final entry still needs genuine sandbox evidence and its final public demonstration. Consult the [official rules](https://paypalaihackathon.devpost.com/rules) for authoritative entry terms.
+The source repository is [prakharsingh1/invoice-replay-lab](https://github.com/prakharsingh1/invoice-replay-lab), licensed under [MIT](LICENSE), copyright 2026 Prakhar Singh. The reviewed source/evidence scope is 29 text files. Video publication is separate; binary videos and screenshots are distributed outside this source repository. Final review, public video verification, and any submission decision remain with the project owner. Consult the [official rules](https://paypalaihackathon.devpost.com/rules) for authoritative entry terms; no final eligibility or submission outcome is asserted here.

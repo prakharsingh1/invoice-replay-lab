@@ -19,6 +19,38 @@ export function paypalStatus(env = process.env) {
   return { configured: missing.length === 0, executed: false, missing };
 }
 
+/** Shape-check a trusted local observation; this is not cryptographic attestation. */
+export function validateSandboxEvidence(raw) {
+  try {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.source !== 'paypal-sandbox' || raw.executed !== true ||
+        typeof raw.invoiceId !== 'string' || !invoiceIdPattern.test(raw.invoiceId) || raw.status !== 'DRAFT' ||
+        raw.snapshot?.status !== 'DRAFT' || raw.snapshot.totalCents !== 100 || raw.snapshot.currency !== 'USD' ||
+        typeof raw.at !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(raw.at) ||
+        !Number.isFinite(Date.parse(raw.at)) || new Date(raw.at).toISOString() !== raw.at ||
+        !Array.isArray(raw.apiCalls) || raw.apiCalls.length < 2 || raw.apiCalls.length > 7) return null;
+    const calls = raw.apiCalls;
+    const createIndex = calls.findIndex(call => call?.method === 'POST' && call.path === INVOICES);
+    if (createIndex < 0 || createIndex > 3 || calls[createIndex].status !== 201) return null;
+    // Optional existing-credential OAuth, exactly one create, then lookup of that ID.
+    // Only OAuth and GET may have prior 429 attempts; creation has no retry guarantee.
+    const before = calls.slice(0, createIndex);
+    if (before.some((call, index) => call?.method !== 'POST' || call.path !== TOKEN || call.status !== (index === before.length - 1 ? 200 : 429))) return null;
+    const after = calls.slice(createIndex + 1);
+    if (after.length < 1 || after.length > 3 || after.some((call, index) => call?.method !== 'GET' ||
+        call.path !== `${INVOICES}/${raw.invoiceId}` || call.status !== (index === after.length - 1 ? 200 : 429))) return null;
+    if (calls.some(call => call.debugId !== undefined && call.debugId !== null &&
+        (typeof call.debugId !== 'string' || !/^[a-zA-Z0-9-]{1,128}$/.test(call.debugId)))) return null;
+    // Reconstruct a minimal immutable record. Never expose arbitrary saved fields.
+    return Object.freeze({
+      invoiceId: raw.invoiceId, status: 'DRAFT', source: 'paypal-sandbox', executed: true, at: raw.at,
+      snapshot: Object.freeze({ status: 'DRAFT', totalCents: 100, currency: 'USD' }),
+      apiCalls: Object.freeze(calls.map(call => Object.freeze({ method: call.method, path: call.path, status: call.status, debugId: call.debugId ?? null })))
+    });
+  } catch {
+    return null;
+  }
+}
+
 export class PayPalSandboxError extends Error {
   constructor(code, message, apiCalls = []) {
     super(message);
@@ -50,7 +82,10 @@ function client({ env, fetchImpl, nowImpl = Date.now, sleepImpl = delay, timeout
   async function request(method, path, { headers, body, expectedStatus, requestId } = {}) {
     if (!allowedRequest(method, path)) fail('OPERATION_BLOCKED', 'This sandbox operation is not allowed.', calls);
     const operationRequestId = method === 'POST' ? requestId ?? randomUUID() : requestId;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // Draft-create Request-Id support is not promised by its API reference.
+    // Never retry a mutation automatically, even after a 429 response.
+    const maxAttempts = method === 'GET' || path === TOKEN ? 3 : 1;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const controller = new AbortController();
       let timer;
       let response;
@@ -83,7 +118,7 @@ function client({ env, fetchImpl, nowImpl = Date.now, sleepImpl = delay, timeout
       } finally {
         clearTimeout(timer);
       }
-      if (response.status === 429 && attempt < 2) {
+      if (response.status === 429 && attempt < maxAttempts - 1) {
         const retryHeader = response.headers.get('retry-after');
         const retry = retryHeader === null || retryHeader.trim() === '' ? NaN : Number(retryHeader);
         const waitMs = Number.isFinite(retry) && retry >= 0 ? Math.min(2000, retry * 1000) : 250 * (2 ** attempt);

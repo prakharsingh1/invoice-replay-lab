@@ -1,17 +1,44 @@
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, openSync, fstatSync, closeSync, constants } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { replayScenario } from './replay.mjs';
 import { predictIncident, modelInfo } from './ml.mjs';
-import { paypalStatus, createSandboxProbe } from './paypal.mjs';
+import { paypalStatus, validateSandboxEvidence } from './paypal.mjs';
 
 const scenarios = JSON.parse(readFileSync(new URL('../fixtures/scenarios.json', import.meta.url))).scenarios;
 const assets = new Map([['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']], ['/styles.css', ['styles.css', 'text/css; charset=utf-8']]]);
 const headers = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" };
+const defaultEvidencePath = new URL('../artifacts/paypal-sandbox-probe.json', import.meta.url);
+const defaultPublicEvidencePath = new URL('../artifacts/paypal-sandbox-evidence.public.json', import.meta.url);
 
-export function createApp({ env = process.env, sandboxProbe = createSandboxProbe } = {}) {
-  let lastSandbox = null;
-  let probePromise = null;
+function loadRecordedEvidence(path) {
+  if (path === null) return { evidence: null, state: 'missing' };
+  let descriptor;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const stat = fstatSync(descriptor);
+    if (!stat.isFile() || stat.size > 16384) return { evidence: null, state: 'invalid' };
+    const evidence = validateSandboxEvidence(JSON.parse(readFileSync(descriptor, 'utf8')));
+    return { evidence, state: evidence ? 'recorded' : 'invalid' };
+  } catch (error) {
+    return { evidence: null, state: error.code === 'ENOENT' ? 'missing' : 'invalid' };
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
+}
+
+export function createApp({ env = process.env, evidencePath = defaultEvidencePath,
+  publicEvidencePath = evidencePath === defaultEvidencePath ? defaultPublicEvidencePath : null } = {}) {
+  // Only a trusted local startup file supplies evidence. Browser JSON cannot load it.
+  // This server never calls the PayPal adapter, including after missing/invalid evidence.
+  let recorded = loadRecordedEvidence(evidencePath);
+  // Judge clones can use the published sanitized observation without credentials.
+  // An invalid private file does not silently fall back to a different observation.
+  if (recorded.state === 'missing' && publicEvidencePath !== null) recorded = loadRecordedEvidence(publicEvidencePath);
+  const lastSandbox = recorded.evidence;
+  function recordedResponse() {
+    return { ...lastSandbox, recorded: true, reused: true, observedAt: lastSandbox.at, replayScenarioId: 'sandbox-draft-guard' };
+  }
   function observedSandboxCase() {
     if (lastSandbox?.executed !== true || lastSandbox?.source !== 'paypal-sandbox') return null;
     const id = 'sandbox-draft-guard';
@@ -30,7 +57,10 @@ export function createApp({ env = process.env, sandboxProbe = createSandboxProbe
         res.writeHead(200, { ...headers, 'Content-Type': contentType });
         return res.end(readFileSync(new URL(`../public/${file}`, import.meta.url)));
       }
-      if (req.method === 'GET' && path === '/api/status') return reply(res, 200, { paypal: { ...paypalStatus(env), executed: lastSandbox?.executed === true && lastSandbox?.source === 'paypal-sandbox', ...(lastSandbox ? { invoiceId: lastSandbox.invoiceId, at: lastSandbox.at } : {}) }, ai: { ...modelInfo(), type: 'local-trained-model', trainedOn: 'synthetic' }, publication: 'local-only', author: 'Prakhar Singh' });
+      if (req.method === 'GET' && path === '/api/status') return reply(res, 200, { paypal: { ...paypalStatus(env), executed: Boolean(lastSandbox), recorded: Boolean(lastSandbox), reused: Boolean(lastSandbox), mutationsAllowed: false, evidenceState: recorded.state, ...(lastSandbox ? { invoiceId: lastSandbox.invoiceId, at: lastSandbox.at, observedAt: lastSandbox.at } : {}) }, ai: { ...modelInfo(), type: 'local-trained-model', trainedOn: 'synthetic' }, publication: 'local-only', author: 'Prakhar Singh' });
+      if (req.method === 'GET' && path === '/api/sandbox/evidence') return lastSandbox
+        ? reply(res, 200, recordedResponse())
+        : reply(res, 404, { error: 'No valid recorded PayPal sandbox observation is available. This server will not create a new invoice.', code: 'NO_RECORDED_SANDBOX_EVIDENCE' });
       if (req.method === 'GET' && path === '/api/scenarios') return reply(res, 200, { scenarios: availableScenarios().map(s => ({ id: s.id, title: s.title, description: s.description, synthetic: true, ...(s.sandboxAnchored ? { sandboxAnchored: true, invoiceId: s.invoice.id } : {}) })) });
       if (req.method === 'GET' && path === '/api/model') return reply(res, 200, modelInfo());
       if (req.method !== 'POST' || !['/api/replay', '/api/sandbox/probe'].includes(path)) return reply(res, 404, { error: 'Route not found' });
@@ -41,10 +71,9 @@ export function createApp({ env = process.env, sandboxProbe = createSandboxProbe
       try { input = JSON.parse(body || '{}'); } catch { return reply(res, 400, { error: 'Invalid JSON' }); }
       if (!input || typeof input !== 'object' || Array.isArray(input)) return reply(res, 400, { error: 'JSON object required' });
       if (path === '/api/sandbox/probe') {
-        if (!paypalStatus(env).configured) return reply(res, 503, { error: 'Existing PayPal sandbox client ID + secret, or existing sandbox access token, required in server environment.', code: 'MISSING_SANDBOX_CREDENTIALS' });
-        probePromise ??= sandboxProbe({ env });
-        try { lastSandbox = await probePromise; } catch (error) { probePromise = null; throw error; }
-        return reply(res, 200, { ...lastSandbox, ...(observedSandboxCase() ? { replayScenarioId: 'sandbox-draft-guard' } : {}) });
+        // Compatibility for older clients: this route now reuses recorded data only.
+        if (lastSandbox) return reply(res, 200, recordedResponse());
+        return reply(res, 409, { error: 'Creating PayPal sandbox invoices through this server is disabled. No valid recorded observation is available.', code: 'SANDBOX_MUTATION_DISABLED' });
       }
       const scenario = availableScenarios().find(s => s.id === input.scenarioId);
       if (!scenario) return reply(res, 404, { error: 'Unknown synthetic scenario' });
@@ -57,7 +86,7 @@ export function createApp({ env = process.env, sandboxProbe = createSandboxProbe
       reply(res, 200, report);
     } catch (error) {
       // Integration errors may carry details; never send raw provider bodies or credentials.
-      reply(res, 502, { error: 'Operation failed. Inspect the local terminal or run sandbox:probe for a redacted diagnostic.', code: error.code ?? 'OPERATION_FAILED', ...(error.debugId ? { debugId: error.debugId } : {}) });
+      reply(res, 502, { error: 'Operation failed. Inspect the local terminal for a redacted diagnostic.', code: error.code ?? 'OPERATION_FAILED' });
       console.error(JSON.stringify({ level: 'error', code: error.code ?? 'OPERATION_FAILED' }));
     }
   });
@@ -66,5 +95,5 @@ export function createApp({ env = process.env, sandboxProbe = createSandboxProbe
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const port = Number(process.env.PORT ?? 4178);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('PORT must be an integer from 1024 to 65535');
-  createApp().listen(port, '127.0.0.1', () => console.log(`InvoiceReplayLab: http://127.0.0.1:${port} — synthetic local replay; sandbox calls only after an explicit probe.`));
+  createApp().listen(port, '127.0.0.1', () => console.log(`InvoiceReplayLab: http://127.0.0.1:${port} — synthetic replay with recorded sandbox evidence; server PayPal mutations disabled.`));
 }

@@ -5,6 +5,7 @@ node_modules/
 .DS_Store
 artifacts/sandbox-evidence.json
 artifacts/paypal-sandbox-probe.json
+artifacts/probe-attempt.private.json
 artifacts/*.log
 artifacts/*.zip
 .playwright-cli/

@@ -1,0 +1,34 @@
+{
+  "invoiceId": "INV2-N7L3-U92J-8WXX-HQLX",
+  "status": "DRAFT",
+  "apiCalls": [
+    {
+      "method": "POST",
+      "path": "/v1/oauth2/token",
+      "status": 200,
+      "debugId": "f5324135dddd3"
+    },
+    {
+      "method": "POST",
+      "path": "/v2/invoicing/invoices",
+      "status": 201,
+      "debugId": "f6144718c47fc"
+    },
+    {
+      "method": "GET",
+      "path": "/v2/invoicing/invoices/INV2-N7L3-U92J-8WXX-HQLX",
+      "status": 200,
+      "debugId": "f466820f87183"
+    }
+  ],
+  "snapshot": {
+    "status": "DRAFT",
+    "totalCents": 100,
+    "currency": "USD"
+  },
+  "source": "paypal-sandbox",
+  "executed": true,
+  "at": "2026-10-09T16:11:36.361Z",
+  "recordedEvidence": true,
+  "scope": "Actual one-time PayPal sandbox USD 1.00 DRAFT create/read. No invoice send, payment, capture, refund, webhook delivery, or external AI call was executed. Replaying this file makes no API requests."
+}

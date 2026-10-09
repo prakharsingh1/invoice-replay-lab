@@ -1,6 +1,5 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { createSandboxProbe, paypalStatus, PAYPAL_SANDBOX_ORIGIN, verifySandboxWebhook } from '../src/paypal.mjs';
 
 // These are explicit stubbed REST contract tests, NOT real PayPal integration evidence.
@@ -86,20 +85,38 @@ describe('PayPal REST contract tests (stubbed; no live integration evidence)', (
     assert.ok(stub.requests.every(request => new URL(request.url).origin === PAYPAL_SANDBOX_ORIGIN && request.redirect === 'error' && request.signal instanceof AbortSignal));
   });
 
-  it('reuses the same request ID and body across bounded 429 retries', async () => {
+  it('retries only the nonmutating GET lookup after rate limits, with a bounded wait', async () => {
     const waits = [];
-    const stub = transport([reply({}, 429, { 'retry-after': '500' }), reply({}, 429), reply(created, 201), reply(invoice)]);
+    const stub = transport([reply(created, 201), reply({}, 429, { 'retry-after': '500' }), reply({}, 429), reply(invoice)]);
     await createSandboxProbe({ env: tokenEnv, fetchImpl: stub.fetchImpl, sleepImpl: async milliseconds => { waits.push(milliseconds); } });
     assert.equal(stub.requests.length, 4);
-    assert.equal(new Set(stub.requests.slice(0, 3).map(request => request.headers['PayPal-Request-Id'])).size, 1);
-    assert.equal(new Set(stub.requests.slice(0, 3).map(request => request.body)).size, 1);
+    assert.equal(stub.requests.filter(request => request.method === 'POST').length, 1);
+    assert.ok(stub.requests.slice(1).every(request => request.method === 'GET' && request.url.endsWith(invoiceId)));
     assert.deepEqual(waits, [2000, 500]);
   });
 
-  it('stops after three rate-limited attempts and does not claim success', async () => {
+  it('stops after one rate-limited invoice creation and never assumes Request-Id deduplication', async () => {
     const stub = transport([reply({}, 429), reply({}, 429), reply({}, 429)]);
-    await assert.rejects(createSandboxProbe({ env: tokenEnv, fetchImpl: stub.fetchImpl, sleepImpl: async () => {} }), error => error.code === 'API_REJECTED' && error.apiCalls.length === 3);
-    assert.equal(stub.requests.length, 3);
+    let waited = false;
+    await assert.rejects(createSandboxProbe({ env: tokenEnv, fetchImpl: stub.fetchImpl, sleepImpl: async () => { waited = true; } }), error => error.code === 'API_REJECTED' && error.apiCalls.length === 1);
+    assert.equal(stub.requests.length, 1);
+    assert.equal(waited, false);
+  });
+
+  it('bounds nonmutating GET lookup at three rate-limited attempts', async () => {
+    const stub = transport([reply(created, 201), reply({}, 429), reply({}, 429), reply({}, 429)]);
+    await assert.rejects(createSandboxProbe({ env: tokenEnv, fetchImpl: stub.fetchImpl, sleepImpl: async () => {} }), error => error.code === 'API_REJECTED' && error.apiCalls.length === 4);
+    assert.equal(stub.requests.length, 4);
+    assert.equal(stub.requests.filter(request => request.method === 'POST').length, 1);
+  });
+
+  it('reuses a request ID and body only for safe existing-credential OAuth retries', async () => {
+    const stub = transport([reply({}, 429), reply({}, 429), reply({ access_token: 'stub-issued', token_type: 'Bearer', expires_in: 3600 }), reply(created, 201), reply(invoice)]);
+    await createSandboxProbe({ env: { PAYPAL_CLIENT_ID: 'stub-oauth-id', PAYPAL_CLIENT_SECRET: 'stub-oauth-secret' }, fetchImpl: stub.fetchImpl, sleepImpl: async () => {} });
+    assert.equal(stub.requests.length, 5);
+    assert.equal(new Set(stub.requests.slice(0, 3).map(request => request.headers['PayPal-Request-Id'])).size, 1);
+    assert.equal(new Set(stub.requests.slice(0, 3).map(request => request.body)).size, 1);
+    assert.equal(stub.requests.filter(request => request.url.endsWith('/v2/invoicing/invoices')).length, 1);
   });
 
   it('uses actual expires_in to cache tokens and refresh before expiration', async () => {
@@ -178,12 +195,4 @@ describe('PayPal REST contract tests (stubbed; no live integration evidence)', (
     assert.equal(called, false);
   });
 
-  it('exits 2 without sandbox credentials and cannot silently fabricate probe evidence', () => {
-    const env = { ...process.env, PAYPAL_CLIENT_ID: '', PAYPAL_CLIENT_SECRET: '', PAYPAL_SANDBOX_ACCESS_TOKEN: '' };
-    const result = spawnSync(process.execPath, ['scripts/sandbox-probe.mjs'], { env, encoding: 'utf8', cwd: new URL('..', import.meta.url) });
-    assert.equal(result.status, 2);
-    assert.match(result.stderr, /NOT executed/);
-    assert.match(result.stderr, /No evidence file was written/);
-    assert.ok(!result.stdout.includes('executed successfully'));
-  });
 });

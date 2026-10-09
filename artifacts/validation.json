@@ -1,12 +1,36 @@
 {
-  "generatedAt": "2026-10-08T07:55:34.395Z",
-  "scope": "local synthetic validation; no actual PayPal API calls",
+  "generatedAt": "2026-10-09T16:19:50.259Z",
+  "scope": "Local synthetic replay validation and recorded evidence checks. This command makes zero PayPal API requests.",
   "sandbox": {
-    "configured": false,
-    "executed": false,
-    "missing": [
-      "PAYPAL_CLIENT_ID",
-      "PAYPAL_CLIENT_SECRET"
+    "recordedEvidenceValid": true,
+    "requestsMadeByThisValidation": 0,
+    "invoiceId": "INV2-N7L3-U92J-8WXX-HQLX",
+    "status": "DRAFT",
+    "snapshot": {
+      "status": "DRAFT",
+      "totalCents": 100,
+      "currency": "USD"
+    },
+    "observedAt": "2026-10-09T16:11:36.361Z",
+    "originalApiCalls": [
+      {
+        "method": "POST",
+        "path": "/v1/oauth2/token",
+        "status": 200,
+        "debugId": "f5324135dddd3"
+      },
+      {
+        "method": "POST",
+        "path": "/v2/invoicing/invoices",
+        "status": 201,
+        "debugId": "f6144718c47fc"
+      },
+      {
+        "method": "GET",
+        "path": "/v2/invoicing/invoices/INV2-N7L3-U92J-8WXX-HQLX",
+        "status": 200,
+        "debugId": "f466820f87183"
+      }
     ]
   },
   "ai": {
@@ -384,8 +408,7 @@
     }
   ],
   "blockers": [
-    "Successful actual PayPal sandbox probe pending existing credentials.",
     "Final public source and demo availability must be checked before submission.",
-    "Actual <3 minute public YouTube demo pending."
+    "Updated under-three-minute public YouTube demo upload and final entrant review remain."
   ]
 }
